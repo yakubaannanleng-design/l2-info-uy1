@@ -1,0 +1,160 @@
+// app.js — Rendu de la plateforme à partir de data.js
+// Aucune dépendance externe : tout est lu depuis l'objet PROGRAMME.
+
+const navList = document.getElementById("nav-list");
+const contentEl = document.getElementById("content");
+const searchInput = document.getElementById("search-input");
+
+document.getElementById("etablissement-label").textContent =
+  `${PROGRAMME.filiere} — ${PROGRAMME.etablissement}`;
+document.getElementById("source-label").textContent =
+  `Programme source : ${PROGRAMME.source}`;
+
+// ---------- Construction d'un index plat de toutes les UE (obligatoires + options) ----------
+function flatUEs() {
+  const all = [];
+  PROGRAMME.semestres.forEach(sem => {
+    sem.ues.forEach(ue => all.push({ ...ue, semestre: sem.numero, isOption: false }));
+    sem.optionnelle.options.forEach(opt =>
+      all.push({ ...opt, semestre: sem.numero, isOption: true, optionLabel: sem.optionnelle.label })
+    );
+  });
+  return all;
+}
+const ALL_UES = flatUEs();
+
+// ---------- Navigation (sidebar) ----------
+function renderNav(filterText = "") {
+  navList.innerHTML = "";
+  const term = filterText.trim().toLowerCase();
+
+  PROGRAMME.semestres.forEach(sem => {
+    const items = [];
+
+    sem.ues.forEach(ue => {
+      if (matches(ue, term)) items.push(navButton(ue, sem.numero, false));
+    });
+    sem.optionnelle.options.forEach(opt => {
+      if (matches(opt, term)) items.push(navButton(opt, sem.numero, true));
+    });
+
+    if (items.length) {
+      const label = document.createElement("div");
+      label.className = "nav-semester-label";
+      label.textContent = `Semestre ${sem.numero}`;
+      navList.appendChild(label);
+      items.forEach(btn => navList.appendChild(btn));
+    }
+  });
+
+  if (!navList.children.length) {
+    navList.innerHTML = `<p class="no-results">Aucune UE ne correspond à cette recherche.</p>`;
+  }
+}
+
+function matches(ue, term) {
+  if (!term) return true;
+  const haystack = [
+    ue.code, ue.titre,
+    ...(ue.matieres || []),
+    ...(ue.competences || []),
+    ...(ue.ressources || [])
+  ].join(" ").toLowerCase();
+  return haystack.includes(term);
+}
+
+function navButton(ue, semestre, isOption) {
+  const btn = document.createElement("button");
+  btn.className = "nav-item";
+  btn.dataset.code = ue.code;
+  btn.innerHTML = `<span class="code">${ue.code}</span><span>${ue.titre}</span>${isOption ? '<span class="nav-optional-tag">option</span>' : ""}`;
+  btn.addEventListener("click", () => {
+    location.hash = ue.code;
+  });
+  return btn;
+}
+
+// ---------- Vue détail d'une UE ----------
+function renderUE(ue) {
+  document.querySelectorAll(".nav-item").forEach(el => {
+    el.classList.toggle("active", el.dataset.code === ue.code);
+  });
+
+  const matieresHTML = (ue.matieres || []).join(" · ");
+
+  contentEl.innerHTML = `
+    <div class="ue-header">
+      <span class="ue-code">${ue.code}</span>
+      <h2 class="ue-title">${ue.titre}</h2>
+    </div>
+    ${matieresHTML ? `<p class="ue-matieres">${matieresHTML}</p>` : ""}
+    <div class="ue-columns">
+      <div class="ue-block competences-block">
+        <h3>Compétences visées</h3>
+        <ul>${(ue.competences || []).map(c => `<li>${c}</li>`).join("")}</ul>
+      </div>
+      <div class="ue-block ressources-block">
+        <h3>Ressources nécessaires</h3>
+        <ul>${(ue.ressources || []).map(r => `<li>${r}</li>`).join("")}</ul>
+      </div>
+    </div>
+  `;
+}
+
+// ---------- Vue d'accueil (vue d'ensemble + stratégie) ----------
+function renderHome() {
+  document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+
+  let cardsHTML = "";
+  PROGRAMME.semestres.forEach(sem => {
+    cardsHTML += `<h3 style="font-family:var(--serif); margin:26px 0 10px;">Semestre ${sem.numero}</h3><div class="overview-grid">`;
+    sem.ues.forEach(ue => {
+      cardsHTML += overviewCard(ue);
+    });
+    cardsHTML += `</div>`;
+    cardsHTML += `<div class="optional-wrap"><p class="optional-label">${sem.optionnelle.label}</p><div class="overview-grid">`;
+    sem.optionnelle.options.forEach(opt => {
+      cardsHTML += overviewCard(opt);
+    });
+    cardsHTML += `</div></div>`;
+  });
+
+  const strategieHTML = PROGRAMME.strategie.map(s => `<li>${s}</li>`).join("");
+
+  contentEl.innerHTML = `
+    <div class="ue-header">
+      <h2 class="ue-title" style="font-size:1.9rem;">Programme complet</h2>
+    </div>
+    <p style="color:var(--ink-soft); max-width:62ch;">
+      Sélectionnez une UE dans le menu ou ci-dessous pour voir ses compétences visées et les ressources nécessaires.
+    </p>
+    ${cardsHTML}
+    <h3 style="font-family:var(--serif); margin:34px 0 4px;">Stratégie pour une mention honorable</h3>
+    <ol class="strategie-list">${strategieHTML}</ol>
+  `;
+
+  contentEl.querySelectorAll(".overview-card").forEach(card => {
+    card.addEventListener("click", () => { location.hash = card.dataset.code; });
+  });
+}
+
+function overviewCard(ue) {
+  return `<button class="overview-card" data-code="${ue.code}">
+    <span class="code">${ue.code}</span>
+    <h4>${ue.titre}</h4>
+  </button>`;
+}
+
+// ---------- Routage simple par hash (#INF211) ----------
+function route() {
+  const code = decodeURIComponent(location.hash.replace("#", ""));
+  if (!code) { renderHome(); return; }
+  const ue = ALL_UES.find(u => u.code === code);
+  if (ue) renderUE(ue); else renderHome();
+}
+
+window.addEventListener("hashchange", route);
+searchInput.addEventListener("input", e => renderNav(e.target.value));
+
+renderNav();
+route();
