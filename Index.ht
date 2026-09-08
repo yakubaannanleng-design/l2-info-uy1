@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cursus L2 Informatique — Compétences & Ressources</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="brand">
+      <span class="brand-mark">L2</span>
+      <div class="brand-text">
+        <h1>Cursus Informatique</h1>
+        <p id="etablissement-label"></p>
+      </div>
+    </div>
+    <div class="header-goal">
+      <span class="goal-label">Objectif</span>
+      <span class="goal-value">Mention Honorable</span>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+
+  <nav class="sidebar" id="sidebar" aria-label="Navigation des UE">
+    <div class="search-box">
+      <input type="search" id="search-input" placeholder="Chercher une UE, un mot-clé…" aria-label="Rechercher">
+    </div>
+    <div id="nav-list"></div>
+  </nav>
+
+  <section class="content" id="content" aria-live="polite">
+    <!-- Rempli dynamiquement par app.js -->
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>Contenu collaboratif — proposez vos corrections et ajouts sur le dépôt du projet.</p>
+  <p class="footer-source" id="source-label"></p>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
+  
